@@ -251,22 +251,23 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 .po-medal{margin-left:6px}
 
 /* Record book */
-.rec-section{margin-top:30px}
-.rec-section>h2{font-family:Archivo;font-weight:800;font-size:17px;margin:0 0 2px;letter-spacing:-.01em}
-.rec-section>.sub{color:var(--muted);font-size:12.5px;margin:0 0 14px;font-weight:500}
-.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:14px}
-.rec-card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:15px 16px}
-.rec-card.gold{border-color:rgba(231,178,76,.4)}
-.rec-card .k{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
-.rec-card .v{font-family:Archivo;font-weight:900;font-size:29px;line-height:1;letter-spacing:-.02em}
-.rec-card.gold .v{color:var(--gold-ink)}
-.rec-card .v.pos{color:var(--win)}.rec-card .v.neg{color:var(--loss)}
-.rec-card .h{font-weight:700;font-size:13.5px;margin-top:10px}
-.rec-card .d{color:var(--muted);font-size:12px;font-weight:500;margin-top:3px}
-.champ-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
-.champ-yr{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;text-align:center}
+.rec-section{margin-top:26px}
+.rec-section>h2{font-family:Archivo;font-weight:800;font-size:16px;margin:0 0 2px;letter-spacing:-.01em}
+.rec-section>.sub{color:var(--muted);font-size:12px;margin:0 0 12px;font-weight:500}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.rec-item{display:flex;align-items:center;gap:13px;padding:11px 15px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--panel),var(--panel2))}
+.rec-item.gold{border-color:rgba(231,178,76,.4)}
+.rec-item .val{font-family:Archivo;font-weight:900;font-size:23px;line-height:1;letter-spacing:-.02em;white-space:nowrap;flex:0 0 auto;min-width:60px}
+.rec-item.gold .val{color:var(--gold-ink)}
+.rec-item .val.pos{color:var(--win)}
+.rec-item .meta{min-width:0;flex:1}
+.rec-item .label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rec-item .who{font-family:Archivo;font-weight:700;font-size:14px;margin-top:3px;line-height:1.2;overflow-wrap:anywhere}
+.rec-item .who .detail{font-family:Inter;color:var(--muted);font-weight:500;font-size:12px}
+.champ-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:10px}
+.champ-yr{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 12px;text-align:center}
 .champ-yr .y{color:var(--muted);font-size:12px;font-weight:700}
-.champ-yr .c{font-family:Archivo;font-weight:800;font-size:16px;margin-top:5px}
+.champ-yr .c{font-family:Archivo;font-weight:800;font-size:15px;margin-top:5px}
 .champ-yr .c .cr{margin-right:5px}
 
 /* ===== Matchup history view ===== */
@@ -19480,13 +19481,14 @@ function computeRecords(){
   const brec=S.reduce((a,b)=>(wp(b)>wp(a)||(wp(b)===wp(a)&&b.wins>a.wins))?b:a);
   const wrec=S.reduce((a,b)=>(wp(b)<wp(a)||(wp(b)===wp(a)&&b.wins<a.wins))?b:a);
   const mpa=maxBy(S,s=>s.pa);
+  const cm=n=>(''+n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
   const season=[
-    ['Most points, season',fmt(bpf.pf,0),bpf.owner,''+bpf.season,1],
+    ['Most points, season',cm(fmt(bpf.pf,0)),bpf.owner,''+bpf.season,1],
     ['Best record, season',brec.record,brec.owner,''+brec.season],
     ['Highest PF/game, season',fmt(bpfg.pfg,1),bpfg.owner,''+bpfg.season],
-    ['Fewest points, season',fmt(wpf.pf,0),wpf.owner,''+wpf.season],
+    ['Fewest points, season',cm(fmt(wpf.pf,0)),wpf.owner,''+wpf.season],
     ['Worst record, season',wrec.record,wrec.owner,''+wrec.season],
-    ['Most points against, season',fmt(mpa.pa,0),mpa.owner,''+mpa.season],
+    ['Most points against, season',cm(fmt(mpa.pa,0)),mpa.owner,''+mpa.season],
   ];
   let bw={n:0}, bl={n:0};
   Object.keys(DB.ownerGames).forEach(o=>{
@@ -19513,7 +19515,7 @@ function computeRecords(){
     ['Most playoff trips',tr.v+'',list(tr.h),'postseason appearances'],
     ['Most all-time wins',wn.v+'',list(wn.h),'regular-season wins'],
     ['Best all-time win%',(wpB*100).toFixed(1)+'%',list(wpH),'regular season'],
-    ['Most career points',fmt(pf.v,0),list(pf.h),'regular season'],
+    ['Most career points',(''+fmt(pf.v,0)).replace(/\B(?=(\d{3})+(?!\d))/g,','),list(pf.h),'regular season'],
     ['Most shotguns',sgM+'',list(sgH),'weekly low scores'],
   ];
   const cy=(typeof PO!=='undefined'&&PO.years)?PO.years.slice().sort().map(y=>({y,c:PO.data[y].champion})):[];
@@ -19523,7 +19525,7 @@ function recCards(arr){
   return '<div class="rec-grid">'+arr.map(function(r){
     const k=r[0],v=r[1],h=r[2],d=r[3],gold=r[4];
     const vc=/^\+/.test(v)?' pos':'';
-    return `<div class="rec-card ${gold?'gold':''}"><div class="k">${k}</div><div class="v${vc}">${v}</div><div class="h">${h}</div><div class="d">${d}</div></div>`;
+    return `<div class="rec-item ${gold?'gold':''}"><div class="val${vc}">${v}</div><div class="meta"><div class="label">${k}</div><div class="who">${h}${d?' <span class="detail">· '+d+'</span>':''}</div></div></div>`;
   }).join('')+'</div>';
 }
 function renderRecords(){
