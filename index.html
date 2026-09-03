@@ -112,7 +112,8 @@ td .rec{font-family:Archivo;font-weight:700}
 .h2h .row{display:grid;grid-template-columns:84px 46px 1fr 92px;align-items:center;gap:12px;padding:5px 18px;border-bottom:1px solid var(--line);cursor:pointer}
 .h2h .row:last-child{border-bottom:0}.h2h .row:hover{background:var(--hover)}
 .h2h .row:hover .opp{color:var(--gold-ink)}
-.h2h .opp{font-weight:600}.h2h .rc{font-family:Archivo;font-weight:700;font-size:13.5px}
+.h2h .opp{font-weight:600}
+.po-badge{font-size:8.5px;font-weight:800;color:var(--gold-ink);border:1px solid var(--gold-dim);border-radius:4px;padding:0 3px;margin-left:5px;vertical-align:middle;letter-spacing:.04em}.h2h .rc{font-family:Archivo;font-weight:700;font-size:13.5px}
 .h2h .bar{height:7px;border-radius:4px;background:var(--loss);overflow:hidden;position:relative}
 .h2h .bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--win);border-radius:4px}
 .h2h .pts{color:var(--muted);font-size:11.5px;text-align:right;white-space:nowrap}.h2h .pts b{color:var(--chalk);font-family:Archivo;font-weight:700}
@@ -307,6 +308,8 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 .mgames .pill.W{background:rgba(95,184,122,.16);color:var(--win)}
 .mgames .pill.L{background:rgba(229,100,91,.16);color:var(--loss)}
 .mgames .opp{cursor:pointer}.mgames .opp:hover{color:var(--gold-ink)}
+.mgames .po-sep td{background:var(--gold-tint);color:var(--gold-ink);font-family:Archivo;font-weight:800;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;padding:6px 20px;border-top:1px solid var(--gold-dim)}
+.mgames .po-stage{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.02em}
 .mhi{padding:14px 20px 18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px}
 
 @media(max-width:820px){
@@ -319,11 +322,10 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
   #v-owners.on .mobile-owner{display:flex}
   .po-round{flex:0 0 200px}
   .top .wrap{gap:4px}
-  .brand span{display:none}.brand-full,.brand-min{display:none}
+  .brand{display:none}
   .nav{margin-left:0;gap:1px;flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   .nav::-webkit-scrollbar{display:none}
-  .nav a{padding:7px 7px;font-size:12.5px;white-space:nowrap}
-  .nav a .full{display:none}.nav a .short{display:inline}
+  .nav a{padding:7px 9px;font-size:13px;white-space:nowrap}
   .picker{gap:0}.picker label{display:none}
   select{padding:8px 24px 8px 9px;font-size:12.5px}
   .theme-toggle{width:34px;height:34px}
@@ -19124,6 +19126,24 @@ function ownerSeasonGames(o,y){
     .map(g=>({week:g.w,opp:g.opp,res:g.res,pf:g.pf,pa:g.pa}))
     .sort((a,b)=>(a.week||0)-(b.week||0));
 }
+function poGamesForOwner(o,y){
+  const d=(typeof PO!=='undefined'&&PO.data)?PO.data[String(y)]:null; if(!d) return [];
+  const num=m=>{const n=m.match(/\d+/g); return n?+n[0]:99;};
+  const lbl=m=>{const n=(m.match(/\d+/g)||[]).map(Number); return n.length>1?('Wk '+n[0]+'–'+n[1]):('Wk '+(n[0]||''));};
+  const out=[];
+  d.tracks.forEach(t=>t.rounds.forEach(rd=>{
+    const wn=num(rd.meta), wl=lbl(rd.meta);
+    rd.games.forEach(g=>{
+      if(g.bye){ if(g.bye===o) out.push({wn,wl,bye:true}); return; }
+      if(g.a===o||g.b===o){
+        const me=g.a===o;
+        out.push({wn,wl,opp:me?g.b:g.a,res:g.win===o?'W':'L',pf:me?g.as:g.bs,pa:me?g.bs:g.as,
+                  stage: t.title==='Championship bracket'?rd.name:'Consolation'});
+      }
+    });
+  }));
+  return out.sort((a,b)=>a.wn-b.wn);
+}
 function openSeason(o,y){
   const gm=ownerSeasonGames(o,y);
   const srow=(DB.seasons[o]||[]).find(s=>s.season===y)||{};
@@ -19138,12 +19158,26 @@ function openSeason(o,y){
     <div><div class="k">PA / game</div><div class="v">${fmt(pa/gm.length,1)}</div></div>
     <div><div class="k">Total PF</div><div class="v">${fmt(pf,1)}</div></div>
     <div><div class="k">Total PA</div><div class="v">${fmt(pa,1)}</div></div>`;
-  $('#m-games').innerHTML=gm.map(g=>{const m=g.pf-g.pa;
+  let rowsHTML=gm.map(g=>{const m=g.pf-g.pa;
     return `<tr><td class="mut">${g.week!=null?'Wk '+g.week:'—'}</td>
       <td class="opp" data-o="${g.opp}">${g.opp}</td>
       <td style="text-align:center"><span class="pill ${g.res}">${g.res}</span></td>
       <td style="text-align:right;white-space:nowrap" class="tnum"><b>${fmt(g.pf,1)}</b> <span class="mut">–</span> ${fmt(g.pa,1)}</td>
       <td style="text-align:right;font-weight:700" class="${m>=0?'w':'l'}">${m>=0?'+':'–'}${fmt(Math.abs(m),1)}</td></tr>`;}).join('');
+  const po=poGamesForOwner(o,y);
+  if(po.length){
+    rowsHTML+=`<tr class="po-sep"><td colspan="5">Playoffs</td></tr>`;
+    rowsHTML+=po.map(g=>{
+      if(g.bye) return `<tr><td class="mut">${g.wl}</td><td class="mut" colspan="4">First-round bye</td></tr>`;
+      const m=g.pf-g.pa;
+      return `<tr><td class="mut">${g.wl}</td>
+        <td>${g.opp} <span class="po-stage">${g.stage}</span></td>
+        <td style="text-align:center"><span class="pill ${g.res}">${g.res}</span></td>
+        <td style="text-align:right;white-space:nowrap"><b>${fmt(g.pf,1)}</b> <span class="mut">–</span> ${fmt(g.pa,1)}</td>
+        <td style="text-align:right;font-weight:700" class="${m>=0?'w':'l'}">${m>=0?'+':'–'}${fmt(Math.abs(m),1)}</td></tr>`;
+    }).join('');
+  }
+  $('#m-games').innerHTML=rowsHTML;
   // highlights
   const hi=gm.reduce((a,g)=>g.pf>a.pf?g:a,gm[0]);
   const wins=gm.filter(g=>g.res==='W');const losses=gm.filter(g=>g.res==='L');
@@ -19168,6 +19202,25 @@ function h2hGames(o,opp){
     .map(g=>({s:g.s,week:g.w,res:g.res,pf:g.pf,pa:g.pa}))
     .sort((a,b)=>(a.s-b.s)||((a.week||0)-(b.week||0)));
 }
+function poH2H(a,bb){
+  if(typeof PO==='undefined'||!PO.data) return [];
+  const wknum=m=>{const n=m.match(/\d+/g); return n?+n[0]:0;};
+  const out=[];
+  Object.keys(PO.data).forEach(year=>{
+    PO.data[year].tracks.forEach(t=>t.rounds.forEach(rd=>{
+      rd.games.forEach(g=>{
+        if(g.bye) return;
+        if((g.a===a&&g.b===bb)||(g.a===bb&&g.b===a)){
+          const me=g.a===a;
+          out.push({year:+year, wk:wknum(rd.meta), two:/Weeks/.test(rd.meta),
+            stage: t.title==='Championship bracket'?rd.name:'Consolation',
+            res: g.win===a?'W':'L', pf: me?g.as:g.bs, pa: me?g.bs:g.as});
+        }
+      });
+    }));
+  });
+  return out.sort((x,y)=>(x.year-y.year)||(x.wk-y.wk));
+}
 function openH2H(o,opp){
   const gm=h2hGames(o,opp);
   if(!gm.length)return;
@@ -19176,7 +19229,9 @@ function openH2H(o,opp){
   const span=lo===hi2?(''+lo):(lo+'–'+hi2);
   $('#m-yr').textContent='VS';
   $('#m-who').innerHTML=o+' vs <span class="opp" data-o="'+opp+'" style="cursor:pointer">'+opp+'</span>';
-  $('#m-sub').textContent=n+' meeting'+(n===1?'':'s')+' · '+span;
+  const po=poH2H(o,opp);
+  const pw=po.filter(g=>g.res==='W').length, pl=po.length-pw;
+  $('#m-sub').innerHTML=n+' reg-season meeting'+(n===1?'':'s')+' · '+span+(po.length?` · <span style="color:var(--gold-ink);font-weight:700">Playoffs ${pw}-${pl}</span>`:'');
   $('#m-rc').innerHTML=`<span class="${W>=L?'w':'l'}">${W}-${L}</span>`;
   const pf=gm.reduce((a,g)=>a+g.pf,0),pa=gm.reduce((a,g)=>a+g.pa,0),mg=(pf-pa)/n;
   $('#m-sum').innerHTML=`
@@ -19185,12 +19240,22 @@ function openH2H(o,opp){
     <div><div class="k">PA / game</div><div class="v">${fmt(pa/n,1)}</div></div>
     <div><div class="k">Margin / game</div><div class="v ${mg>=0?'w':'l'}">${mg>=0?'+':'–'}${fmt(Math.abs(mg),1)}</div></div>`;
   $('#m-thead').innerHTML='<th>Season</th><th>Wk</th><th style="text-align:center">Result</th><th style="text-align:right">Score</th><th style="text-align:right">Margin</th>';
-  $('#m-games').innerHTML=gm.map(g=>{const m=g.pf-g.pa;
+  let rowsHTML=gm.map(g=>{const m=g.pf-g.pa;
     return `<tr><td style="font-family:Archivo;font-weight:700">${g.s}</td>
       <td class="mut">${g.week!=null?'Wk '+g.week:'—'}</td>
       <td style="text-align:center"><span class="pill ${g.res}">${g.res}</span></td>
       <td style="text-align:right;white-space:nowrap"><b>${fmt(g.pf,1)}</b> <span class="mut">–</span> ${fmt(g.pa,1)}</td>
       <td style="text-align:right;font-weight:700" class="${m>=0?'w':'l'}">${m>=0?'+':'–'}${fmt(Math.abs(m),1)}</td></tr>`;}).join('');
+  if(po.length){
+    rowsHTML+=`<tr class="po-sep"><td colspan="5">Playoffs · not counted in the averages above</td></tr>`;
+    rowsHTML+=po.map(g=>{const m=g.pf-g.pa;
+      return `<tr><td style="font-family:Archivo;font-weight:700">${g.year}</td>
+        <td>${g.stage} ${g.two?'<span class="po-stage">2-wk total</span>':''}</td>
+        <td style="text-align:center"><span class="pill ${g.res}">${g.res}</span></td>
+        <td style="text-align:right;white-space:nowrap"><b>${fmt(g.pf,1)}</b> <span class="mut">–</span> ${fmt(g.pa,1)}</td>
+        <td style="text-align:right;font-weight:700" class="${m>=0?'w':'l'}">${m>=0?'+':'–'}${fmt(Math.abs(m),1)}</td></tr>`;}).join('');
+  }
+  $('#m-games').innerHTML=rowsHTML;
   const topg=gm.reduce((a,g)=>g.pf>a.pf?g:a,gm[0]);
   const wins=gm.filter(g=>g.res==='W'),losses=gm.filter(g=>g.res==='L');
   const bigWin=wins.length?wins.reduce((a,g)=>(g.pf-g.pa)>(a.pf-a.pa)?g:a):null;
