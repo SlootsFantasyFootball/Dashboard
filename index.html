@@ -250,6 +250,25 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 .po-standings-table tr.champ td:first-child,.po-standings-table tr.champ .team{color:var(--gold-ink)}
 .po-medal{margin-left:6px}
 
+/* Record book */
+.rec-section{margin-top:30px}
+.rec-section>h2{font-family:Archivo;font-weight:800;font-size:17px;margin:0 0 2px;letter-spacing:-.01em}
+.rec-section>.sub{color:var(--muted);font-size:12.5px;margin:0 0 14px;font-weight:500}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:14px}
+.rec-card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:15px 16px}
+.rec-card.gold{border-color:rgba(231,178,76,.4)}
+.rec-card .k{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
+.rec-card .v{font-family:Archivo;font-weight:900;font-size:29px;line-height:1;letter-spacing:-.02em}
+.rec-card.gold .v{color:var(--gold-ink)}
+.rec-card .v.pos{color:var(--win)}.rec-card .v.neg{color:var(--loss)}
+.rec-card .h{font-weight:700;font-size:13.5px;margin-top:10px}
+.rec-card .d{color:var(--muted);font-size:12px;font-weight:500;margin-top:3px}
+.champ-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.champ-yr{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;text-align:center}
+.champ-yr .y{color:var(--muted);font-size:12px;font-weight:700}
+.champ-yr .c{font-family:Archivo;font-weight:800;font-size:16px;margin-top:5px}
+.champ-yr .c .cr{margin-right:5px}
+
 /* ===== Matchup history view ===== */
 .pagehead{padding:30px 0 8px}
 .pagehead h1{font-family:Archivo;font-weight:900;font-size:clamp(34px,6vw,60px);letter-spacing:-.03em;line-height:.9;margin:0}
@@ -371,7 +390,7 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
     <a href="#/power" id="nav-power"><span class="full">Power Rankings</span><span class="short">Power</span></a>
     <a href="#/playoffs" id="nav-playoffs"><span class="full">Playoffs</span><span class="short">Playoffs</span></a>
     <a href="#/draft" id="nav-draft"><span class="full">Draft Board</span><span class="short">Draft</span></a>
-    <a href="#/history" id="nav-history"><span class="full">Matchup History</span><span class="short">History</span></a>
+    <a href="#/records" id="nav-records"><span class="full">Record Book</span><span class="short">Records</span></a>
   </nav>
   <div class="picker" id="picker">
     <label for="owner">Owner</label>
@@ -426,35 +445,6 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
     </details>
   </section>
 
-  <!-- ============ HISTORY VIEW ============ -->
-  <section class="view" id="v-history">
-    <div class="pagehead">
-      <h1>Every game ever</h1>
-      <p>All <span id="hh-total"></span> regular-season matchups from 2018 through 2025. Filter by season or owner, search a name, or sort any column.</p>
-    </div>
-    <div class="statbar" id="hist-statbar"></div>
-    <div class="filters">
-      <div class="sel"><select id="f-season"></select></div>
-      <div class="sel"><select id="f-team"></select></div>
-      <div class="search"><input id="f-search" type="search" placeholder="Search an owner…" autocomplete="off"></div>
-      <span class="count" id="f-count"></span>
-    </div>
-    <div class="histwrap"><table class="hist">
-      <thead><tr>
-        <th data-k="s" class="sorted">Season<span class="car">▾</span></th>
-        <th data-k="w">Week<span class="car">▾</span></th>
-        <th data-k="win">Winner<span class="car">▾</span></th>
-        <th data-k="ws" style="text-align:center">Score<span class="car">▾</span></th>
-        <th data-k="lose">Loser<span class="car">▾</span></th>
-        <th data-k="mg" class="mgh" style="text-align:right">Margin<span class="car">▾</span></th>
-      </tr></thead>
-      <tbody id="t-hist"></tbody>
-    </table>
-    <div class="empty" id="hist-empty" style="display:none">No games match those filters.</div>
-    </div>
-    <footer>Built from League_History_Dashboard.xlsx · winners shown left · scores are winner–loser</footer>
-  </section>
-
   <!-- ============ POWER RANKINGS VIEW ============ -->
   <section class="view" id="v-power">
     <div class="pagehead">
@@ -495,6 +485,12 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
         <tbody id="po-standings-body"></tbody>
       </table></div>
     </details>
+  </section>
+
+  <!-- ============ RECORD BOOK VIEW ============ -->
+  <section class="view" id="v-records">
+    <div class="pagehead"><h1>Record Book</h1></div>
+    <div id="rec-body"></div>
   </section>
 </main>
 
@@ -19455,6 +19451,93 @@ function showPlayoffs(year){
   renderPOYears(); renderPlayoffs();
 }
 
+/* ---------- RECORD BOOK ---------- */
+function computeRecords(){
+  const g=DB.games; const P=[];
+  g.forEach(x=>{P.push({team:x.win,opp:x.lose,pf:x.ws,pa:x.ls,res:'W',s:x.s,w:x.w});
+                P.push({team:x.lose,opp:x.win,pf:x.ls,pa:x.ws,res:'L',s:x.s,w:x.w});});
+  const maxBy=(a,f)=>a.reduce((x,y)=>f(y)>f(x)?y:x);
+  const minBy=(a,f)=>a.reduce((x,y)=>f(y)<f(x)?y:x);
+  const wk=x=>'Wk '+(x.w!=null?x.w:'—');
+  const hi=maxBy(P,p=>p.pf), lo=minBy(P,p=>p.pf);
+  const hiLoss=maxBy(P.filter(p=>p.res==='L'),p=>p.pf);
+  const loWin=minBy(P.filter(p=>p.res==='W'),p=>p.pf);
+  const hic=maxBy(g,x=>x.ws+x.ls), loc=minBy(g,x=>x.ws+x.ls);
+  const blow=maxBy(g,x=>x.ws-x.ls), close=minBy(g,x=>x.ws-x.ls);
+  const single=[
+    ['Highest score',fmt(hi.pf,1),hi.team,`${hi.s} · ${wk(hi)} vs ${hi.opp}`,1],
+    ['Highest-scoring game',fmt(hic.ws+hic.ls,1),`${hic.win} vs ${hic.lose}`,`${hic.s} · ${wk(hic)}`],
+    ['Biggest blowout','+'+fmt(blow.ws-blow.ls,1),`${blow.win} over ${blow.lose}`,`${blow.s} · ${wk(blow)}`],
+    ['Closest game','+'+fmt(close.ws-close.ls,2),`${close.win} over ${close.lose}`,`${close.s} · ${wk(close)}`],
+    ['Most points in a loss',fmt(hiLoss.pf,1),hiLoss.team,`${hiLoss.s} · ${wk(hiLoss)} vs ${hiLoss.opp}`],
+    ['Fewest points in a win',fmt(loWin.pf,1),loWin.team,`${loWin.s} · ${wk(loWin)} vs ${loWin.opp}`],
+    ['Lowest score',fmt(lo.pf,1),lo.team,`${lo.s} · ${wk(lo)} vs ${lo.opp}`],
+    ['Lowest-scoring game',fmt(loc.ws+loc.ls,1),`${loc.win} vs ${loc.lose}`,`${loc.s} · ${wk(loc)}`],
+  ];
+  const S=[]; Object.keys(DB.seasons).forEach(o=>DB.seasons[o].forEach(s=>S.push(Object.assign({owner:o},s))));
+  const wp=s=>s.wins/(s.wins+s.losses);
+  const bpf=maxBy(S,s=>s.pf), wpf=minBy(S,s=>s.pf), bpfg=maxBy(S,s=>s.pfg);
+  const brec=S.reduce((a,b)=>(wp(b)>wp(a)||(wp(b)===wp(a)&&b.wins>a.wins))?b:a);
+  const wrec=S.reduce((a,b)=>(wp(b)<wp(a)||(wp(b)===wp(a)&&b.wins<a.wins))?b:a);
+  const mpa=maxBy(S,s=>s.pa);
+  const season=[
+    ['Most points, season',fmt(bpf.pf,0),bpf.owner,''+bpf.season,1],
+    ['Best record, season',brec.record,brec.owner,''+brec.season],
+    ['Highest PF/game, season',fmt(bpfg.pfg,1),bpfg.owner,''+bpfg.season],
+    ['Fewest points, season',fmt(wpf.pf,0),wpf.owner,''+wpf.season],
+    ['Worst record, season',wrec.record,wrec.owner,''+wrec.season],
+    ['Most points against, season',fmt(mpa.pa,0),mpa.owner,''+mpa.season],
+  ];
+  let bw={n:0}, bl={n:0};
+  Object.keys(DB.ownerGames).forEach(o=>{
+    const gl=DB.ownerGames[o].slice().sort((a,b)=>(a.s-b.s)||((a.w||0)-(b.w||0)));
+    let res=null,len=0,start=null;
+    gl.forEach(x=>{
+      if(x.res===res)len++; else {res=x.res;len=1;start=x;}
+      if(res==='W'&&len>bw.n)bw={o,n:len,a:start,b:x};
+      if(res==='L'&&len>bl.n)bl={o,n:len,a:start,b:x};
+    });
+  });
+  const span=x=> x.a.s===x.b.s ? `${x.a.s} · Wk ${x.a.w}–${x.b.w}` : `${x.a.s} Wk ${x.a.w} → ${x.b.s} Wk ${x.b.w}`;
+  const streaks=[
+    ['Longest win streak',bw.n+' games',bw.o,span(bw),1],
+    ['Longest losing streak',bl.n+' games',bl.o,span(bl)],
+  ];
+  const at=DB.alltime, os=DB.owners, list=a=>a.join(' & ');
+  const top=f=>{const m=Math.max.apply(null,os.map(o=>f(at[o])));return {v:m,h:os.filter(o=>f(at[o])===m)};};
+  const ch=top(a=>a.champs), tr=top(a=>a.playoffs), wn=top(a=>a.wins), pf=top(a=>a.pf);
+  const wpB=Math.max.apply(null,os.map(o=>at[o].winPct)), wpH=os.filter(o=>at[o].winPct===wpB);
+  const sgM=Math.max.apply(null,os.map(o=>DB.shotgun[o].total)), sgH=os.filter(o=>DB.shotgun[o].total===sgM);
+  const career=[
+    ['Most championships',ch.v+'',list(ch.h),'title winners',1],
+    ['Most playoff trips',tr.v+'',list(tr.h),'postseason appearances'],
+    ['Most all-time wins',wn.v+'',list(wn.h),'regular-season wins'],
+    ['Best all-time win%',(wpB*100).toFixed(1)+'%',list(wpH),'regular season'],
+    ['Most career points',fmt(pf.v,0),list(pf.h),'regular season'],
+    ['Most shotguns',sgM+'',list(sgH),'weekly low scores'],
+  ];
+  const cy=(typeof PO!=='undefined'&&PO.years)?PO.years.slice().sort().map(y=>({y,c:PO.data[y].champion})):[];
+  return {single,season,streaks,career,cy};
+}
+function recCards(arr){
+  return '<div class="rec-grid">'+arr.map(function(r){
+    const k=r[0],v=r[1],h=r[2],d=r[3],gold=r[4];
+    const vc=/^\+/.test(v)?' pos':'';
+    return `<div class="rec-card ${gold?'gold':''}"><div class="k">${k}</div><div class="v${vc}">${v}</div><div class="h">${h}</div><div class="d">${d}</div></div>`;
+  }).join('')+'</div>';
+}
+function renderRecords(){
+  const R=computeRecords();
+  let html='';
+  html+=`<div class="rec-section"><h2>Single-game records</h2><p class="sub">Regular season, 2018–2025</p>${recCards(R.single)}</div>`;
+  html+=`<div class="rec-section"><h2>Season records</h2><p class="sub">Single season, regular season</p>${recCards(R.season)}</div>`;
+  html+=`<div class="rec-section"><h2>Streaks</h2><p class="sub">Consecutive regular-season games</p>${recCards(R.streaks)}</div>`;
+  html+=`<div class="rec-section"><h2>Career &amp; dynasty</h2><p class="sub">All-time</p>${recCards(R.career)}</div>`;
+  if(R.cy.length) html+=`<div class="rec-section"><h2>Champions</h2><p class="sub">League title by year</p><div class="champ-strip">`+
+    R.cy.map(c=>`<div class="champ-yr"><div class="y">${c.y}</div><div class="c"><span class="cr">🏆</span>${c.c}</div></div>`).join('')+`</div></div>`;
+  $('#rec-body').innerHTML=html;
+}
+
 /* ---------- ROUTER ---------- */
 function setView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
@@ -19464,19 +19547,19 @@ function route(){
   const h=location.hash.replace(/^#\/?/,'');
   const parts=h.split('/').filter(Boolean).map(decodeURIComponent);
   const v=parts[0];
-  const isHist=v==='history', isPower=v==='power', isDraft=v==='draft', isPO=v==='playoffs';
-  $('#nav-owners').classList.toggle('active',!isHist&&!isPower&&!isDraft&&!isPO);
-  $('#nav-history').classList.toggle('active',isHist);
+  const isPower=v==='power', isDraft=v==='draft', isPO=v==='playoffs', isRec=v==='records';
+  $('#nav-owners').classList.toggle('active',!isPower&&!isDraft&&!isPO&&!isRec);
   $('#nav-power').classList.toggle('active',isPower);
   $('#nav-draft').classList.toggle('active',isDraft);
   $('#nav-playoffs').classList.toggle('active',isPO);
-  const away=isHist||isPower||isDraft||isPO;
+  $('#nav-records').classList.toggle('active',isRec);
+  const away=isPower||isDraft||isPO||isRec;
   $('#picker').style.display=away?'none':'flex';
   $('#theme-toggle').style.marginLeft=away?'auto':'';
-  if(isHist){setView('v-history');window.scrollTo(0,0);closeSeason();return;}
   if(isPower){setView('v-power');window.scrollTo(0,0);closeSeason();loadPower();return;}
   if(isDraft){setView('v-draft');window.scrollTo(0,0);closeSeason();showDraft(parts[1]);return;}
   if(isPO){setView('v-playoffs');window.scrollTo(0,0);closeSeason();showPlayoffs(parts[1]);return;}
+  if(isRec){setView('v-records');window.scrollTo(0,0);closeSeason();renderRecords();return;}
   // owners
   setView('v-owners');
   let owner=parts[1]&&DB.alltime[parts[1]]?parts[1]:(sel.value||DEFAULT_OWNER);
@@ -19505,7 +19588,6 @@ $('#theme-toggle').onclick=()=>{
 };
 
 /* init */
-initHistory();
 if(!location.hash){sel.value=DEFAULT_OWNER;go('#/owners/'+encodeURIComponent(DEFAULT_OWNER));}
 else route();
 </script>
