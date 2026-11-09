@@ -207,6 +207,29 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 .th-side ul{list-style:none;margin:0;padding:0}
 .th-side li{font-size:14px;font-weight:500;padding:2px 0}
 .th-empty{color:var(--muted);padding:30px 4px;font-weight:500}
+.th-card{cursor:pointer;transition:border-color .15s ease,transform .15s ease}
+.th-card:hover,.th-card:focus-visible{border-color:var(--gold-dim);outline:none}
+.th-wk{display:flex;align-items:center}
+.th-wk .more{margin-left:auto;color:var(--gold-ink);letter-spacing:.02em;text-transform:none;font-family:Inter;font-weight:700;font-size:12px}
+.thm-teams{display:grid;grid-template-columns:1fr 1fr}
+.thm-team{padding:18px 20px;min-width:0}
+.thm-team+.thm-team{border-left:1px solid var(--line)}
+.thm-name{font-family:Archivo;font-weight:800;font-size:17px;margin-bottom:4px}
+.thm-name a{color:var(--chalk);text-decoration:none}.thm-name a:hover{color:var(--gold)}
+.thm-got{color:var(--muted);font-size:12.5px;font-weight:600;margin-bottom:14px;line-height:1.45}
+.thm-got b{color:var(--chalk);font-weight:600}
+.thm-t{width:100%;border-collapse:collapse;font-size:13px}
+.thm-t th{color:var(--muted);font-weight:700;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;text-align:right;padding:0 0 6px;border-bottom:1px solid var(--line)}
+.thm-t th:first-child,.thm-t td:first-child{text-align:left}
+.thm-t td{padding:8px 0;border-bottom:1px solid var(--line);text-align:right;font-weight:600;white-space:nowrap}
+.thm-t td:first-child{color:var(--muted);font-size:12px}
+.thm-t td:first-child small{display:block;font-size:10.5px;color:var(--muted2);font-weight:600}
+.thm-t tr.tot td{border-bottom:0;font-weight:800}
+.thm-t .rec{font-family:Archivo;font-weight:800}
+.thm-res{margin-top:14px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700}
+.thm-res.champ{border-color:var(--gold-dim);color:var(--gold-ink)}
+@media(max-width:560px){.thm-teams{grid-template-columns:1fr}.thm-team+.thm-team{border-left:0;border-top:1px solid var(--line)}.thm-team{padding:16px}}
+
 
 @media(max-width:560px){.th-sides{grid-template-columns:1fr}.th-swap{justify-content:center;padding:0;height:0;position:relative}.th-swap{font-size:0}.th-swap::before{content:"⇅";font-size:16px;position:relative;top:-1px;background:var(--panel);padding:0 8px}.th-side+.th-swap+.th-side{border-top:1px solid var(--line)}}
 
@@ -610,6 +633,17 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
       <tbody id="m-games"></tbody>
     </table></div>
     <div class="mhi" id="m-hi"></div>
+  </div>
+</div>
+
+<div class="backdrop" id="th-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="thm-who" style="position:relative;max-width:720px">
+    <button class="mclose close" id="thm-close" aria-label="Close">×</button>
+    <div class="mhead">
+      <div class="yr" id="thm-yr"></div>
+      <div><div class="who" id="thm-who"></div><div class="mut" id="thm-sub" style="font-size:12.5px;font-weight:600"></div></div>
+    </div>
+    <div class="thm-teams" id="thm-teams"></div>
   </div>
 </div>
 
@@ -20991,19 +21025,76 @@ const TH=JSON.parse(document.getElementById('trade-data').textContent);
 const thEsc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 (function(){const s=$('#th-season');s.innerHTML=TH.years.map(y=>`<option value="${y}">${y}${y===TH.inProgress?' (so far)':''}</option>`).join('');s.onchange=()=>go('#/history/'+s.value);})();
 function thOwner(o){return DB.alltime[o]?`<a href="#/owners/${encodeURIComponent(o)}">${thEsc(o)}</a>`:thEsc(o);}
-function showHistory(year){
-  const y=(year&&TH.data[year])?year:TH.years[0];
+function showHistory(year,n){
+  const y=(year&&TH.data[year])?year:TH.years[0];const idx=+n||0;
   $('#th-season').value=y;
   const L=TH.data[y]||[];
   const cnt={};L.forEach(t=>Object.keys(t.got).forEach(o=>cnt[o]=(cnt[o]||0)+1));
   const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
   const busiest=top.length?top.filter(x=>x[1]===top[0][1]).map(x=>x[0]):[];
   $('#th-sum').innerHTML=L.length?`<b>${L.length}</b> trade${L.length===1?'':'s'}${busiest.length&&top[0][1]>1?` · most active: <b>${busiest.map(thEsc).join(', ')}</b> (${top[0][1]})`:''}`:'';
-  $('#th-list').innerHTML=L.length?L.map(t=>{
-    const sides=Object.entries(t.got).map(([o,ps])=>`<div class="th-side"><div class="th-who">${thOwner(o)}<span>got</span></div><ul>${ps.map(p=>`<li>${thEsc(p)}</li>`).join('')}</ul></div>`);
-    return `<article class="th-card"><div class="th-wk">Week ${t.w}</div><div class="th-sides">${sides[0]}<div class="th-swap" aria-hidden="true">⇄</div>${sides[1]}</div></article>`;
+  $('#th-list').innerHTML=L.length?L.map((t,i)=>{
+    const sides=Object.entries(t.got).map(([o,ps])=>`<div class="th-side"><div class="th-who">${thEsc(o)}<span>got</span></div><ul>${ps.map(p=>`<li>${thEsc(p)}</li>`).join('')}</ul></div>`);
+    return `<article class="th-card" tabindex="0" role="button" data-i="${i}" aria-label="Week ${t.w} trade between ${Object.keys(t.got).map(thEsc).join(' and ')}: see before and after"><div class="th-wk">Week ${t.w}<span class="more">Before &amp; after ›</span></div><div class="th-sides">${sides[0]}<div class="th-swap" aria-hidden="true">⇄</div>${sides[1]}</div></article>`;
   }).join(''):'<div class="th-empty">No trades this season.</div>';
+  $('#th-list').querySelectorAll('.th-card').forEach(c=>{
+    const open=()=>go('#/history/'+y+'/'+(+c.dataset.i+1));
+    c.onclick=open;c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}};
+  });
+  if(idx&&L[idx-1])openTrade(y,idx-1);else closeTrade(true);
 }
+function thSplit(y,o,w){
+  const G=DB.games.filter(g=>g.s===+y&&(g.win===o||g.lose===o));
+  const agg=f=>{const a={w:0,l:0,pf:0,n:0};G.filter(f).forEach(g=>{const won=g.win===o;a.n++;a[won?'w':'l']++;a.pf+=won?g.ws:g.ls;});return a;};
+  const last=Math.max(0,...DB.games.filter(g=>g.s===+y).map(g=>g.w));
+  return {before:agg(g=>g.w<w),after:agg(g=>g.w>=w),all:agg(()=>true),last};
+}
+function thStanding(y,o){
+  const ip=y===TH.inProgress;
+  if(!ip&&PO.data[y]){
+    const d=PO.data[y],st=d.standings,n=st.length,r=(st.find(s=>s.team===o)||{}).rk;
+    const inPO=(d.tracks[0].rounds||[]).some(rd=>rd.games.some(g=>g.bye===o||g.a===o||g.b===o));
+    const ord=k=>k+(['th','st','nd','rd'][(k%100-20)%10]||['th','st','nd','rd'][k%100]||'th');
+    if(!r)return {txt:'—'};
+    if(r===1)return {txt:'🏆 Won the title',cls:'champ'};
+    if(r===2)return {txt:'Runner-up'};
+    if(r===3)return {txt:'3rd place'};
+    if(r===n)return {txt:'Last place ('+ord(r)+')'};
+    return {txt:(inPO?'Made playoffs':'Missed playoffs')+' · finished '+ord(r)};
+  }
+  const tbl={};DB.games.filter(g=>g.s===+y).forEach(g=>{[[g.win,1,g.ws],[g.lose,0,g.ls]].forEach(([t,wn,pf])=>{tbl[t]=tbl[t]||{w:0,pf:0};tbl[t].w+=wn;tbl[t].pf+=pf;});});
+  const order=Object.keys(tbl).sort((a,b)=>tbl[b].w-tbl[a].w||tbl[b].pf-tbl[a].pf);
+  const k=order.indexOf(o)+1,ord=k+(['th','st','nd','rd'][(k%100-20)%10]||['th','st','nd','rd'][k%100]||'th');
+  return {txt:'Season in progress · '+ord+' right now'};
+}
+function openTrade(y,i){
+  const t=TH.data[y][i];if(!t)return;
+  const [A,B]=Object.keys(t.got);
+  $('#thm-yr').textContent=y;
+  $('#thm-who').textContent='Week '+t.w+' trade';
+  $('#thm-sub').textContent=A+' ⇄ '+B;
+  const row=(lab,sub,a)=>`<tr${lab==='Season'?' class="tot"':''}><td>${lab}<small>${sub}</small></td><td class="rec">${a.n?a.w+'-'+a.l:'—'}</td><td>${a.n?a.pf.toFixed(2):'—'}</td><td>${a.n?(a.pf/a.n).toFixed(1):'—'}</td></tr>`;
+  $('#thm-teams').innerHTML=[A,B].map(o=>{
+    const s=thSplit(y,o,t.w),res=thStanding(y,o),ip=y===TH.inProgress;
+    const bw=t.w>1?(t.w===2?'Week 1':'Weeks 1–'+(t.w-1)):'No games yet';
+    const aw=t.w===s.last?'Week '+t.w:'Weeks '+t.w+'–'+s.last;
+    return `<div class="thm-team"><div class="thm-name">${thOwner(o)}</div>
+      <div class="thm-got">Got <b>${t.got[o].map(thEsc).join(', ')}</b></div>
+      <table class="thm-t"><thead><tr><th></th><th>Record</th><th>PF</th><th>PF/G</th></tr></thead><tbody>
+      ${row('Before',bw,s.before)}${row('After',s.after.n?aw+(ip?' so far':''):'No games yet',s.after)}${row('Season','Regular season'+(ip?' so far':''),s.all)}
+      </tbody></table>
+      <div class="thm-res${res.cls?' '+res.cls:''}">${res.txt}</div></div>`;
+  }).join('');
+  $('#th-backdrop').classList.add('on');document.body.style.overflow='hidden';
+}
+function closeTrade(silent){
+  if(!$('#th-backdrop').classList.contains('on'))return;
+  $('#th-backdrop').classList.remove('on');document.body.style.overflow='';
+  if(!silent){const m=location.hash.match(/^#\/?history\/(\d{4})\/\d+/);if(m)history.replaceState(null,'','#/history/'+m[1]);}
+}
+$('#thm-close').onclick=()=>closeTrade();
+$('#th-backdrop').onclick=e=>{if(e.target.id==='th-backdrop')closeTrade();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTrade();});
 function route(){
   const h=location.hash.replace(/^#\/?/,'');
   const parts=h.split('/').filter(Boolean).map(decodeURIComponent);
@@ -21018,12 +21109,13 @@ function route(){
   $('#nav-records').classList.toggle('active',isRec);
   $('#nav-trades').classList.toggle('active',isTrades);
   const away=isPower||isDraft||isPO||isRec||isTrades||isHist;
+  if(!isHist)closeTrade(true);
   $('#picker').style.display=away?'none':'flex';
   $('#theme-toggle').style.marginLeft=away?'auto':'';
   if(isPower){setView('v-power');window.scrollTo(0,0);closeSeason();loadPower();return;}
   if(isDraft){setView('v-draft');window.scrollTo(0,0);closeSeason();showDraft(parts[1]);return;}
   if(isPO){setView('v-playoffs');window.scrollTo(0,0);closeSeason();showPlayoffs(parts[1]);return;}
-  if(isHist){setView('v-history');window.scrollTo(0,0);closeSeason();showHistory(parts[1]);return;}
+  if(isHist){setView('v-history');window.scrollTo(0,0);closeSeason();showHistory(parts[1],parts[2]);return;}
   if(isRec){setView('v-records');window.scrollTo(0,0);closeSeason();renderRecords();return;}
   if(isTrades){setView('v-trades');window.scrollTo(0,0);closeSeason();loadTrades();return;}
   // owners
