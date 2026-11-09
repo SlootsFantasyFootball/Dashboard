@@ -21078,7 +21078,7 @@ function openTrade(y,i){
     const s=thSplit(y,o,t.w),res=thStanding(y,o),ip=y===TH.inProgress;
     const bw=t.w>1?(t.w===2?'Week 1':'Weeks 1–'+(t.w-1)):'No games yet';
     const aw=t.w===s.last?'Week '+t.w:'Weeks '+t.w+'–'+s.last;
-    return `<div class="thm-team"><div class="thm-name">${thOwner(o)}</div>
+    return `<div class="thm-team"><div class="thm-name">${thEsc(o)}</div>
       <div class="thm-got">Got <b>${t.got[o].map(thEsc).join(', ')}</b></div>
       <table class="thm-t"><thead><tr><th></th><th>Record</th><th>PF</th><th>PF/G</th></tr></thead><tbody>
       ${row('Before',bw,s.before)}${row('After',s.after.n?aw+(ip?' so far':''):'No games yet',s.after)}${row('Season','Regular season'+(ip?' so far':''),s.all)}
