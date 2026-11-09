@@ -49,11 +49,12 @@ body{background:var(--ink);color:var(--chalk);font-family:Inter,system-ui,sans-s
   font-family:Archivo;font-weight:900;font-size:17px;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
 .brand b{font-family:Archivo;font-weight:800;letter-spacing:-.01em;font-size:16px}
 .brand-min{display:none}
-.nav a .short{display:none}
+@media(max-width:1060px){.brand-full{display:none}.brand-min{display:inline}}
+@media(max-width:960px){.picker label{display:none}.top .wrap{gap:14px}}
 .brand span{color:var(--muted);font-size:12.5px;font-weight:500}
 .nav{display:flex;gap:4px;margin-left:8px}
-.nav a{color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;
-  padding:8px 13px;border-radius:9px;line-height:1}
+.nav a{color:var(--muted);text-decoration:none;font-weight:600;font-size:12.5px;line-height:1.15;
+  padding:5px 11px;border-radius:9px;min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;white-space:nowrap}
 .nav a:hover{color:var(--chalk);background:var(--hover)}
 .nav a.active{color:var(--on-gold);background:var(--gold)}
 .picker{margin-left:auto;display:flex;align-items:center;gap:10px}
@@ -206,8 +207,7 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 .th-side ul{list-style:none;margin:0;padding:0}
 .th-side li{font-size:14px;font-weight:500;padding:2px 0}
 .th-empty{color:var(--muted);padding:30px 4px;font-weight:500}
-.nav a{white-space:nowrap}
-@media(max-width:1260px){.nav a .full{display:none}.nav a .short{display:inline}}
+
 @media(max-width:560px){.th-sides{grid-template-columns:1fr}.th-swap{justify-content:center;padding:0;height:0;position:relative}.th-swap{font-size:0}.th-swap::before{content:"⇅";font-size:16px;position:relative;top:-1px;background:var(--panel);padding:0 8px}.th-side+.th-swap+.th-side{border-top:1px solid var(--line)}}
 
 .inprog{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--muted);border:1px solid currentColor;vertical-align:1px;white-space:nowrap}
@@ -379,7 +379,9 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
   .brand{display:none}
   .nav{margin-left:0;gap:1px;flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   .nav::-webkit-scrollbar{display:none}
-  .nav a{padding:7px 9px;font-size:13px;white-space:nowrap}
+  .nav a{padding:4px 1px;font-size:clamp(8.5px,2.7vw,11px);min-width:0;min-height:40px}
+  .nav{display:flex;justify-content:space-between;overflow:visible}
+  .nav a{flex:1 1 auto}
   .picker{gap:0}.picker label{display:none}
   select{padding:8px 24px 8px 9px;font-size:12.5px}
   .theme-toggle{width:34px;height:34px}
@@ -444,16 +446,16 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
 <script>(function(){try{var t=localStorage.getItem('sloots-theme');if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
 <header class="top"><div class="wrap">
   <div class="brand" id="brand"><div class="crest">S</div>
-    <div class="brand-txt"><b class="brand-full">Sloots Fantasy Football</b><b class="brand-min">Sloots</b><br><span>League history · 2018–2026</span></div>
+    <div class="brand-txt"><b class="brand-full">Sloots Fantasy Football</b><b class="brand-min">Sloots</b></div>
   </div>
   <nav class="nav">
-    <a href="#/owners" id="nav-owners">Owners</a>
-    <a href="#/trades" id="nav-trades"><span class="full">Trade Analyzer</span><span class="short">Trades</span></a>
-    <a href="#/history" id="nav-history"><span class="full">Trade History</span><span class="short">History</span></a>
-    <a href="#/power" id="nav-power"><span class="full">Power Rankings</span><span class="short">Power</span></a>
-    <a href="#/playoffs" id="nav-playoffs"><span class="full">Playoffs</span><span class="short">Playoffs</span></a>
-    <a href="#/draft" id="nav-draft"><span class="full">Draft Board</span><span class="short">Draft</span></a>
-    <a href="#/records" id="nav-records"><span class="full">Record Book</span><span class="short">Records</span></a>
+    <a href="#/owners" id="nav-owners"><span>Owners</span></a>
+    <a href="#/trades" id="nav-trades"><span>Trade</span><span>Analyzer</span></a>
+    <a href="#/history" id="nav-history"><span>Trade</span><span>History</span></a>
+    <a href="#/power" id="nav-power"><span>Power</span><span>Rankings</span></a>
+    <a href="#/playoffs" id="nav-playoffs"><span>Playoffs</span></a>
+    <a href="#/draft" id="nav-draft"><span>Draft</span><span>Board</span></a>
+    <a href="#/records" id="nav-records"><span>Record</span><span>Book</span></a>
   </nav>
   <div class="picker" id="picker">
     <label for="owner">Owner</label>
@@ -556,8 +558,7 @@ footer{color:var(--muted2);font-size:12px;padding:26px 0 40px;border-top:1px sol
   <section class="view" id="v-history">
     <div class="pagehead">
       <h1>Trade History</h1>
-      <p>Every trade since 2018, checked against ESPN's records.</p>
-    </div>
+      </div>
     <div class="th-bar">
       <label for="th-season">Season</label>
       <div class="sel"><select id="th-season" aria-label="Select season"></select></div>
