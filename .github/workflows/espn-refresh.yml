@@ -1,0 +1,78 @@
+name: ESPN data refresh
+
+# Pulls the league data from ESPN, rebuilds the Trade Analyzer data built into index.html
+# (keeping the FantasyPros projections already on the site), and opens a preview PR when
+# anything changed. Nothing goes live until the PR is merged.
+on:
+  schedule:
+    - cron: '43 12 * * *'   # daily, 7:43 a.m. ET (12:43 UTC)
+  workflow_dispatch:
+  push:
+    branches: [espn-automation]   # test runs while this is being set up
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: espn-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the tools
+        uses: actions/checkout@v4
+        with:
+          path: tools-src
+      - name: Check out the live site (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install headless browser
+        run: |
+          mkdir -p runner && cd runner && npm init -y >/dev/null && npm install playwright@1.48.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Fetch league data from ESPN
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          ESPN_SWID: ${{ secrets.ESPN_SWID }}
+        run: |
+          if [ -z "$ESPN_S2" ] || [ -z "$ESPN_SWID" ]; then echo "ESPN_S2 / ESPN_SWID secrets are missing"; exit 1; fi
+          SEASON=$(date -u +%Y); [ "$(date -u +%m)" -lt 3 ] && SEASON=$((SEASON-1))
+          URL="https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leagues/977488?view=mSettings&view=mTeam&view=mRoster&view=mMatchup"
+          code=$(curl -sS -o espn.json -w '%{http_code}' -H "Cookie: espn_s2=${ESPN_S2}; SWID=${ESPN_SWID}" -H 'Accept: application/json' "$URL")
+          echo "ESPN HTTP $code, $(wc -c < espn.json) bytes"
+          [ "$code" = "200" ] || { echo "ESPN request failed (cookies may have expired)"; exit 1; }
+          python3 -c "import json,sys;d=json.load(open('espn.json'));assert len(d['teams'])==12 and d.get('schedule'),'unexpected ESPN data';print('season',d['seasonId'],'week',d['scoringPeriodId'])"
+      - name: Rebuild the Trade Analyzer data
+        id: build
+        run: |
+          cp tools-src/tools/espnrefresh.js runner/
+          cd runner
+          node espnrefresh.js ../site/index.html ../espn.json ../index_new.html ../summary.md | tee ../build.log
+          grep -q '^changed=true' ../build.log && echo "changed=true" >> "$GITHUB_OUTPUT" || echo "changed=false" >> "$GITHUB_OUTPUT"
+      - name: Open a preview PR
+        if: steps.build.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd site
+          STAMP=$(TZ=America/New_York date +%Y-%m-%d-%H%M); DAY=$(TZ=America/New_York date '+%b %-d')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "preview/espn-${STAMP}"
+          cp ../index_new.html index.html
+          git commit -qam "ESPN data refresh ${DAY} (automatic)"
+          git push -q origin HEAD
+          gh pr create --base main --head "preview/espn-${STAMP}" --title "ESPN data refresh ${DAY} (automatic)" --body-file ../summary.md
+      - name: Nothing new
+        if: steps.build.outputs.changed != 'true'
+        run: echo "No roster, score or schedule changes since the live data; no PR opened."
