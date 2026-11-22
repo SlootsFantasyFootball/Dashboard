@@ -12,3 +12,7 @@ FantasyPros-only refresh:
 
     python3 tools/fprows.py index.html /tmp/rows.json
     node tools/fprefresh.js index.html /tmp/rows.json /tmp/index_new.html
+- `espnrefresh.js` — rebuilds the Trade Analyzer data from a fresh ESPN league file, keeping the
+  FantasyPros rows already on the site, and writes a summary (roster moves, trade-count check, odds).
+  Used by the scheduled GitHub workflow `.github/workflows/espn-refresh.yml`, which pulls ESPN with the
+  `ESPN_S2` / `ESPN_SWID` repository secrets and opens a preview PR when anything changed.

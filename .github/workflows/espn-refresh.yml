@@ -7,8 +7,6 @@ on:
   schedule:
     - cron: '43 12 * * *'   # daily, 7:43 a.m. ET (12:43 UTC)
   workflow_dispatch:
-  push:
-    branches: [espn-automation]   # test runs while this is being set up
 
 permissions:
   contents: write
